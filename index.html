@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Preguntas en Phaser</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.86.0/phaser.min.js"></script>
+    <style>
+        body {
+            background: #333;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+
+        #game-canvas {
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            margin: auto;
+             max-width: 100% !important;
+             max-height: 100vh !important;
+             object-fit: contain;
+        }  
+        /* Media queries para diferentes tamaños de pantalla */
+        @media screen and (max-width: 768px) {
+            canvas {
+                width: 100% !important;
+                height: auto !important;
+            }
+        }
+
+        @media screen and (max-height: 600px) {
+            canvas {
+                height: 100vh !important;
+                width: auto !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-canvas"></div>
+    <script>
+    window.onload = function() {
+        const questions = [
+            {
+                question: "¿Cuál es la principal ventaja de utilizar metodologías ágiles en la administración de proyectos de software?",
+                options: ["Mayor control sobre los empleados", "Facilita la adaptación a los cambios y la entrega continua de valor", "Reduce la cantidad de reuniones con los interesados", "Elimina la necesidad de documentar los proyectos"],
+                answer: 2
+            },
+            {
+                question: "¿Qué marco ágil utiliza ciclos de trabajo llamados \"sprints\"?",
+                options: ["Kanban", "Lean", "Scrum", "XP (Extreme Programming)"],
+                answer: 3
+            },
+            {
+                question: "En un proyecto ágil, el objetivo principal de cada iteración (o sprint) es:",
+                options: ["Completar todo el proyecto de una vez", "Entregar un incremento de software funcional", "Evitar reuniones con el cliente", "Planificar detalladamente las siguientes fases"],
+                answer: 2
+            },
+            {
+                question: "¿Cuál es uno de los principios clave del Manifiesto Ágil?",
+                options: ["La entrega de software es menos importante que la documentación","Responder al cambio por encima de seguir un plan","El cliente no debe involucrarse mucho en el proceso","Las herramientas y procesos son lo más importante"],
+                answer: 2
+            }
+        ];
+
+        class StartScene extends Phaser.Scene {
+            constructor() {
+                super('StartScene');
+            }
+
+            preload() {
+                // Carga la imagen de fondo
+                this.load.image('backgroundImage', './img/fondo_inicio.jpg');
+                // Carga personaje 1
+                this.load.image('personaje1', './img/personaje1.png');
+                // Cargar personaje 2
+                this.load.image('personaje2', './img/personaje2.png');
+            }
+
+            create() {
+                const width = this.scale.width;
+                const height = this.scale.height;
+                
+                // Añade la imagen de fondo y ajústala para cubrir toda la escena
+                //const background = this.add.image(0, 0, 'backgroundImage');
+                //background.setOrigin(0, 0);
+                const background = this.add.image(width/2, height/2, 'backgroundImage');
+                background.setDisplaySize(width, height);
+
+                // Ajusta el tamaño de la imagen para cubrir toda la escena
+                //background.displayWidth = this.sys.canvas.width;
+                //background.displayHeight = this.sys.canvas.height;
+
+                 // Ajustar texto del título
+                this.add.text(width/2, height * 0.2, "Project Masters:", { 
+                    fontSize: Math.min(width * 0.05, 30) + 'px', 
+                    fill: '#ffff00', 
+                    fontFamily: '"Press Start 2P"',
+                    stroke: '#000', 
+                    strokeThickness: 4 
+                }).setOrigin(0.5);
+
+                // Ajustar subtítulo
+                this.add.text(width/2, height * 0.3, "Software Challenge", { 
+                    fontSize: Math.min(width * 0.05, 30) + 'px',
+                    fill: '#ffff00', 
+                    fontFamily: '"Press Start 2P"',
+                    stroke: '#000', 
+                    strokeThickness: 4 
+                }).setOrigin(0.5);
+
+                  // Ajustar personajes
+                const personaje1 = this.add.image(width * 0.2, height * 0.6, 'personaje1');
+                personaje1.setScale(Math.min(width/800, height/600) * 0.8);
+                
+                const personaje2 = this.add.image(width * 0.8, height * 0.6, 'personaje2');
+                personaje2.setScale(Math.min(width/800, height/600) * 0.8);
+                personaje2.setFlipX(true);
+
+                const startButton = this.add.text(width/2, height * 0.6, "Start Game", {
+                    fontSize: Math.min(width * 0.03, 24) + 'px',
+                    fill: '#eee3cf',
+                    fontFamily: '"Press Start 2P"',
+                    backgroundColor: '#282a1d',
+                    padding: {
+                        left: 15,
+                        right: 15,
+                        top: 10,
+                        bottom: 10
+                    }
+                })
+                    .setOrigin(0.5)
+                    .setInteractive({ useHandCursor: true })
+                    .on('pointerdown', () => this.scene.start('GameScene'))
+                    .on('pointerover', function() {
+                        this.setStyle({ fill: '#ffff00', backgroundColor: '#666666' });
+                    })
+                    .on('pointerout', function() {
+                        this.setStyle({ fill: '#eee3cf', backgroundColor: '#282a1d' });
+                    });
+            }
+        }
+
+        class GameScene extends Phaser.Scene {
+            constructor() {
+                super('GameScene');
+            }
+
+            init() {
+                this.currentQuestionIndex = 0;
+                this.score = 0;
+                this.questionTexts = [];
+            }
+
+
+            preload() {
+                // Carga la imagen de fondo
+                this.load.image('backgroundQuestion', './img/fondo_preguntas.jpg');
+                // Carga personaje 1
+                this.load.image('personaje1', './img/personaje1.png');
+                // Cargar personaje 2
+                //this.load.image('personaje2', './img/personaje2.png');
+                // Cargar Dragon
+                this.load.image('dragon', './img/dragon.png');
+            }
+
+            create() {
+                // Añade la imagen de fondo y ajústala para cubrir toda la escena
+                const background = this.add.image(0, 0, 'backgroundQuestion');
+                background.setOrigin(0, 0);
+
+                // Ajusta el tamaño de la imagen para cubrir toda la escena
+                background.displayWidth = this.sys.canvas.width;
+                background.displayHeight = this.sys.canvas.height;
+                
+                this.add.text(20, 20, "Project Master", { fontSize: '32px', fill: '#000' });
+                this.feedbackText = this.add.text(20, 500, "", { fontSize: '24px', fill: '#000' });
+                this.feedbackText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height - 50, "", { 
+                    fontSize: '24px', 
+                    fill: '#000',
+                    wordWrap: { width: 350 }, // Limita el ancho del texto a 400 píxeles (600 - 200)
+                    align: 'left' // Alinea el texto a la izquierda
+                }).setOrigin(0.5);
+                this.showQuestion();
+
+                const personaje1 = this.add.image(150, 500, 'personaje1');
+                personaje1.setScale(0.5);
+
+
+                const dragon = this.add.image(650, 500, 'dragon');
+                dragon.setScale(0.5);
+            }
+
+            createQuestionBox() {
+                const boxWidth = 700;  // Aumenté el ancho para que quepa el texto de la pregunta
+                const boxHeight = 300; // Aumenté la altura para que quepan todas las opciones
+                const boxX = this.sys.game.config.width / 2 - boxWidth / 2;
+                //const boxY = this.sys.game.config.height / 2 - boxHeight / 2;
+                const boxY = 80;
+                const box = this.add.graphics();
+                box.fillStyle(0x95a399, 0.9);
+                box.lineStyle(3, 0x504a89, 1);
+                box.fillRoundedRect(boxX, boxY, boxWidth, boxHeight, 15);
+                box.strokeRoundedRect(boxX, boxY, boxWidth, boxHeight, 15);
+                return { x: boxX, y: boxY, width: boxWidth, height: boxHeight };
+            }
+
+            showQuestion() {
+                this.feedbackText.setText("");
+
+                const question = questions[this.currentQuestionIndex];
+                const box = this.createQuestionBox();
+
+                // Añadir la pregunta
+                const questionText = this.add.text(box.x + 20, box.y + 20, question.question, { 
+                    fontSize: '22px',
+                    fill: '#000',
+                    wordWrap: { width: box.width - 40 }
+                });
+                this.questionTexts.push(questionText);
+
+                // Calcular el espacio disponible para las opciones
+                const availableHeight = box.height - questionText.height - 60; // Espacio para opciones
+                const optionHeight = availableHeight / question.options.length;
+
+                question.options.forEach((option, index) => {
+                    const text = this.add.text(
+                        box.x + 40, 
+                        box.y + questionText.height + 60 + (index * optionHeight),
+                        `${index + 1}. ${option}`,
+                        { 
+                            fontSize: '18px', 
+                            fill: '#000',
+                            wordWrap: { width: box.width - 40 }
+                        }
+                    )
+                        .setInteractive({ useHandCursor: true })
+                        .on('pointerdown', () => this.checkAnswer(index))
+                        .on('pointerover', () => text.setStyle({ fill: '#d45c56' }))
+                        .on('pointerout', () => text.setStyle({ fill: '#000' }));
+                    this.questionTexts.push(text);
+                });
+            }
+
+            checkAnswer(selectedIndex) {
+                const question = questions[this.currentQuestionIndex];
+                const correctAnswerIndex = question.answer;
+
+                if (selectedIndex === correctAnswerIndex -1) {
+                    this.score++;
+                    this.feedbackText.setText("¡Correcto!");
+                    this.feedbackText.setColor('#0f0');
+                } else {
+                    this.feedbackText.setText(`Incorrecto. La respuesta correcta era: ${question.options[correctAnswerIndex]}`);
+                    this.feedbackText.setColor('#f00');
+                }
+
+                // Aseguramos que el texto esté en la posición correcta
+                this.feedbackText.setPosition(400, 500);
+
+                this.currentQuestionIndex++;
+                this.time.delayedCall(3000, this.nextQuestion, [], this);
+            }
+
+
+
+            nextQuestion() {
+                this.questionTexts.forEach(text => text.destroy());
+                this.questionTexts = [];
+
+                if (this.currentQuestionIndex < questions.length) {
+                    this.showQuestion();
+                } else {
+                     this.showGameOver(); 
+            }
+        }
+
+            showGameOver() {
+                const box = this.createQuestionBox();
+                const gameOverText = this.add.text(
+                    box.x + box.width / 2, 
+                    box.y + 50,
+                    `Juego terminado!`,
+                { fontSize: '32px', fill: '#000', align: 'center' }
+                ).setOrigin(0.5);
+
+                const scoreText = this.add.text(
+                    box.x + box.width / 2, 
+                    box.y + 120,
+                    `Tu puntaje: ${this.score}/${questions.length}`,
+                { fontSize: '28px', fill: '#000', align: 'center' }
+                ).setOrigin(0.5);
+
+                this.questionTexts.push(gameOverText, scoreText);
+
+                this.showRestartButton(box);
+            }
+
+            showRestartButton(box) {
+                const restartButton = this.add.text(
+                    box.x + box.width / 2, 
+                    box.y + box.height - 50,
+                    'Reiniciar Juego', 
+                    { 
+                        fontSize: '24px', 
+                        fill: '#fff',
+                        backgroundColor: '#282a1d',
+                        padding: {
+                            left: 15,
+                            right: 15,
+                            top: 10,
+                            bottom: 10
+                        }
+                    }
+                )
+                .setOrigin(0.5)
+                .setInteractive({ useHandCursor: true })
+                .on('pointerdown', () => this.scene.start('StartScene'))
+
+                .on('pointerover', function() {
+                    this.setStyle({ fill: '#ffff00', backgroundColor: '#666666' });
+                })
+                .on('pointerout', function() {
+                    this.setStyle({ fill: '#fff', backgroundColor: '#282a1d' });
+                });
+                this.questionTexts.push(restartButton);
+            }
+        }
+
+        const config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            parent: 'game-canvas',  // Añade esta línea
+            scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH,
+                width: 800,
+                height: 600,
+                min: {
+                    width: 320,
+                    height: 240
+                },
+                max: {
+                    width: 1600,
+                    height: 1200
+                }
+            },
+            scene: [StartScene, GameScene]
+        };
+
+        new Phaser.Game(config);
+    }
+    </script>
+</body>
+</html>
